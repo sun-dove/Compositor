@@ -1,5 +1,5 @@
 #include "Gates.h"
-#include "Locale.h"
+#include "DisplayLocale.h"
 #include "ProductionNetwork.h"
 #include "ui/MainWindow.h"
 #include <QApplication>

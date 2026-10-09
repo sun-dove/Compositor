@@ -1,4 +1,4 @@
-#include "Locale.h"
+#include "DisplayLocale.h"
 #include "UpdateDialog.h"
 #include "Gates.h"
 #include "ui/MainWindow.h"

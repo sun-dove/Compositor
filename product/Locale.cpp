@@ -1,4 +1,4 @@
-#include "Locale.h"
+#include "DisplayLocale.h"
 #include <QApplication>
 #include <QProxyStyle>
 #include <QStyleOption>

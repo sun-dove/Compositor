@@ -13,6 +13,17 @@ on:
         description: '验收通过后发布候选资产，暂不推进稳定索引'
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: true
+      source_ref:
+        type: string
+        required: true
+    secrets:
+      WINDOWS_UPDATE_PRIVATE_KEY:
+        required: true
 permissions:
   contents: write
 jobs:
@@ -23,6 +34,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
+          ref: ${{ inputs.source_ref || github.sha }}
       - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
         id: deps
         with:
@@ -51,6 +63,9 @@ jobs:
         if: always()
         with:
           name: native-windows
-          path: native-artifacts
+          path: |
+            native-artifacts/release
+            native-artifacts/evidence
+            native-artifacts/bootstrap
           if-no-files-found: error
           compression-level: 0

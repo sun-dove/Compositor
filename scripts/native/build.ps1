@@ -58,7 +58,8 @@ Get-ChildItem $crt -Filter '*.dll' | Copy-Item -Destination $payload -Force
 $sourceArchive=Join-Path $payload 'sources/Compositor-sun-dove-source.zip'
 Run git -C $root archive --format=zip "--output=$sourceArchive" HEAD
 Copy-Item -LiteralPath (Join-Path $root 'docs/windows/使用说明.md') -Destination (Join-Path $payload '使用说明.md')
-$policy=[ordered]@{schema=1;channel='stable';automaticUpdates=$true;version=$Version;macUpstreamCommit='22c7b8d5b23bb1e27a5746912061b23757c4f554';windowsUpstreamCommit='dfd0044d39b63ea49112a0e316a9460af29acdea';windowsMacBaseline=$qtLock.upstream}
+$state=Get-Content (Join-Path $root 'product/upstream-state.json') -Raw | ConvertFrom-Json
+$policy=[ordered]@{schema=1;channel='stable';automaticUpdates=$true;version=$Version;macUpstreamCommit=$state.macUpstreamCommit;windowsUpstreamCommit=$state.windowsUpstreamCommit;windowsMacBaseline=$qtLock.upstream}
 $policy | ConvertTo-Json | Set-Content (Join-Path $payload 'release-policy.json') -Encoding utf8
 [IO.File]::WriteAllText((Join-Path $payload 'README.txt'),"Compositor Windows 中文版 $Version`n请通过安装目录根部 CompositorStart.exe 启动；应用启动会检查本仓库签名更新。`n原作者 Robbie Tilton；Windows 移植 IAmTheBlurr；中文与自动更新 sun-dove。`n保留原完整界面、图标与 Inter 字体。中文缺失字形由 Windows 系统字体补齐。`n请将 .comp 项目保存在应用目录之外。完整最新 Mac 功能尚未迁移。`n许可证与可重建源代码位于 licenses / sources。安装包没有 Authenticode 签名。`n")
 $evidence=Join-Path $outputPath 'evidence';New-Item -ItemType Directory -Force $evidence | Out-Null
