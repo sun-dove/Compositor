@@ -1,4 +1,5 @@
- {
+
+  {
     "name": "compositor",
     "version": "1.0.0",
     "description": "Photoshop alternative for Mac (Windows build)",
