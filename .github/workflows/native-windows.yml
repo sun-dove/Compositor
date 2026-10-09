@@ -9,8 +9,12 @@ on:
         description: '候选版本'
         default: '0.2.0'
         required: true
+      publish_preview:
+        description: '验收通过后发布候选资产，暂不推进稳定索引'
+        type: boolean
+        default: false
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: windows-2022
@@ -19,12 +23,34 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        id: deps
+        with:
+          path: windows-native/dependencies
+          key: native-deps-v1-${{ hashFiles('windows-native/dependencies.lock.json', 'windows-native/dependencies/imaging/lock.json') }}
       - name: 构建完整参考界面与中文体验门
         shell: pwsh
         run: ./scripts/native/build.ps1 -Version '${{ inputs.version || '0.2.0' }}'
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        if: always() && steps.deps.outputs.cache-hit != 'true'
+        with:
+          path: windows-native/dependencies
+          key: ${{ steps.deps.outputs.cache-primary-key }}
+      - name: 生产签名、实际安装校验并生成安装包
+        shell: pwsh
+        env:
+          WINDOWS_UPDATE_PRIVATE_KEY: ${{ secrets.WINDOWS_UPDATE_PRIVATE_KEY }}
+        run: ./scripts/native/package.ps1 -Version '${{ inputs.version || '0.2.0' }}'
+      - name: 发布完整预览资产
+        if: inputs.publish_preview == true
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create 'windows-v${{ inputs.version }}' native-artifacts/release/* --prerelease --title 'Compositor Windows 中文版 ${{ inputs.version }}' --notes-file native-artifacts/release/发布说明.md
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
           name: native-windows
           path: native-artifacts
           if-no-files-found: error
+          compression-level: 0
