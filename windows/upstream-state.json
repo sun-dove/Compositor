@@ -1,0 +1,6 @@
+{
+  "repository": "robbietilton/Compositor",
+  "commit": "22c7b8d5b23bb1e27a5746912061b23757c4f554",
+  "projectFormatVersion": 11,
+  "capabilities": "基础栅格图层、文件夹、透明度、八种混合模式、变换与 PNG 导出"
+}
