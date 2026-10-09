@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>Compositor.Windows</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>../resources/app.ico</ApplicationIcon>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Core/Compositor.Core.csproj" />
+    <PackageReference Include="Avalonia" Version="12.1.3" ExcludeAssets="analyzers" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.3" />
+    <PackageReference Include="Velopack" Version="1.2.161" />
+    <EmbeddedResource Include="../update-public-key.pem" Link="update-public-key.pem" />
+    <EmbeddedResource Include="../resources/app.ico" LogicalName="WindowsIcon" />
+    <None Include="../../LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!-- The programmatic UI has no XAML generators. These two SDK-9 analyzers cannot run in the pinned SDK-8 compiler. -->
+  <Target Name="RemoveIncompatibleAvaloniaAnalyzers" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Analyzer Remove="@(Analyzer)" Condition="'%(Analyzer.Filename)' == 'Avalonia.Analyzers.CSharp' Or '%(Analyzer.Filename)' == 'Avalonia.Generators'" />
+    </ItemGroup>
+  </Target>
+</Project>

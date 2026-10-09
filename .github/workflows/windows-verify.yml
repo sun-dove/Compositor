@@ -1,0 +1,27 @@
+name: Windows 中文版验收
+on:
+  pull_request:
+    paths: ['windows/**', 'scripts/windows/**', '.github/workflows/windows-*.yml']
+  push:
+    paths: ['windows/**', 'scripts/windows/**', '.github/workflows/windows-*.yml']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          dotnet-version: 8.0.425
+      - name: 全量确定性门与中文体验门
+        shell: pwsh
+        run: ./scripts/windows/build.ps1 -Output windows/artifacts/verify
+      - name: 上游同步成功与失败场景
+        run: python scripts/windows/verify-sync.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: windows-ui-gates
+          path: windows/artifacts/verify/ui
