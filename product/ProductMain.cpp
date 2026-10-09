@@ -19,6 +19,7 @@ int main(int argc,char**argv){
     QApplication app(argc,argv);app.setApplicationName("Compositor");app.setOrganizationName("Compositor Windows");app.setApplicationVersion(PRODUCT_VERSION);
     app.setProperty("manualUpdatesOnly", true);
     const auto args=app.arguments();
+    if(args.contains("--write-version")){auto i=args.indexOf("--write-version");if(i+1>=args.size())return 2;QFile file(args[i+1]);if(!file.open(QIODevice::WriteOnly))return 2;file.write(app.applicationVersion().toUtf8());return 0;}
     if(args.contains("--update-health-check")){
         try{
             auto model=QApplication::applicationDirPath()+"/models/birefnet-lite.onnx";

@@ -36,6 +36,16 @@ if(!$SkipDependencies){
  if((Get-FileHash (Join-Path $imaging 'model/birefnet-lite.onnx')).Hash -ine $lock.model.onnx_sha256){throw '离线模型摘要不符'}
 }
 $env:PATH="$qt/bin;$env:PATH";$env:QT_PLUGIN_PATH=Join-Path $qt 'plugins'
+# Make restored MSBuild dependency timestamps reflect source commits, not the
+# fresh checkout time. A source change still advances its dependency timestamp.
+$nativeTime=[DateTimeOffset]::FromUnixTimeSeconds([long](& git -C $root log -1 --format=%ct -- windows-native/src windows-native/assets)).UtcDateTime
+foreach($path in @(& git -C $root ls-files windows-native/src windows-native/assets)){
+ if(Test-Path -LiteralPath (Join-Path $root $path)){(Get-Item -LiteralPath (Join-Path $root $path)).LastWriteTimeUtc=$nativeTime}
+}
+foreach($path in @(& git -C $root ls-files product)){
+ $time=[DateTimeOffset]::FromUnixTimeSeconds([long](& git -C $root log -1 --format=%ct -- $path)).UtcDateTime
+ (Get-Item -LiteralPath (Join-Path $root $path)).LastWriteTimeUtc=$time
+}
 Run $cmake -S $native -B (Join-Path $native 'build/product') -G 'Visual Studio 17 2022' -A x64 "-DCMAKE_PREFIX_PATH=$qt" -DCOMPOSITOR_PRODUCT=ON "-DPRODUCT_VERSION=$Version"
 $build=Join-Path $native 'build/product';$release=Join-Path $build 'Release'
 Run $cmake --build $build --config Release --target CompositorProduct CompositorStart core_tests persistence_tests command_ui_tests window_chrome_tests --parallel 4

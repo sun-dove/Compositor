@@ -22,6 +22,8 @@ try{
  $rsa.ImportFromPem($env:WINDOWS_UPDATE_PRIVATE_KEY)
  $signature=$rsa.SignData($bytes,[Security.Cryptography.HashAlgorithmName]::SHA256,[Security.Cryptography.RSASignaturePadding]::Pkcs1)
 }finally{$rsa.Dispose()}
+# Native health checks must not inherit the release signing secret.
+Remove-Item Env:WINDOWS_UPDATE_PRIVATE_KEY
 $envelope=[ordered]@{keyId='sun-dove-compositor-rsa3072-v1';payload=[Convert]::ToBase64String($bytes);signature=[Convert]::ToBase64String($signature)}
 $feed=Join-Path $release 'native-feed.json';[IO.File]::WriteAllText($feed,($envelope | ConvertTo-Json -Compress),$encoding)
 $localFeed=Join-Path $stage 'feed';New-Item -ItemType Directory -Force $localFeed | Out-Null

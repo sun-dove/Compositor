@@ -1,0 +1,103 @@
+name: 自动同步并发布原界面 Windows 中文版
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      force_release:
+        description: '主动发布已确认的产品修复'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: native-stable-release
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.sync.outputs.changed }}
+      candidate: ${{ steps.sync.outputs.candidate }}
+      base: ${{ steps.sync.outputs.base }}
+      branch: ${{ steps.sync.outputs.branch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          ref: main
+      - name: 七个正式同步场景门
+        run: python scripts/native/verify-sync.py
+      - name: 双上游同步候选
+        id: sync
+        env:
+          FORCE_RELEASE: ${{ inputs.force_release || false }}
+        run: python scripts/native/sync.py
+  build:
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    permissions:
+      contents: write
+    uses: ./.github/workflows/native-windows.yml
+    with:
+      version: 0.3.${{ github.run_number }}
+      source_ref: ${{ needs.sync.outputs.candidate }}
+    secrets: inherit
+  publish:
+    needs: [sync,build]
+    runs-on: windows-2022
+    timeout-minutes: 25
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.sync.outputs.candidate }}
+      - name: 下载验收产物
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download ${{ github.run_id }} --name native-windows --dir native-artifacts
+      - name: 发布完整候选资产
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create 'windows-v0.3.${{ github.run_number }}' native-artifacts/release/* --prerelease --target '${{ needs.sync.outputs.candidate }}' --title 'Compositor Windows 中文版 0.3.${{ github.run_number }}' --notes-file native-artifacts/release/发布说明.md
+      - name: 真实 GitHub 下载、安装、旧版回退与中文项目保留
+        run: |
+          $feed='native-artifacts/candidate-feed'
+          New-Item -ItemType Directory $feed | Out-Null
+          Copy-Item native-artifacts/release/native-feed.json "$feed/feed.json"
+          ./product/Expand-Verified.ps1 -Archive 'native-artifacts/release/Compositor-0.3.${{ github.run_number }}-payload.zip' -Feed $feed
+          ./scripts/native/verify-upgrade.ps1 -Bootstrap native-artifacts/bootstrap -CandidateFeed $feed -Output native-artifacts/upgrade -PreviousUrl 'https://raw.githubusercontent.com/sun-dove/Compositor/windows-update/native-stable.json'
+          $remote='native-artifacts/remote-install'
+          New-Item -ItemType Directory $remote | Out-Null
+          Get-ChildItem native-artifacts/bootstrap | Copy-Item -Destination $remote -Recurse
+          $p=Start-Process "$remote/CompositorStart.exe" -ArgumentList @('--initialize','--install','--quiet','--url','https://github.com/sun-dove/Compositor/releases/download/windows-v0.3.${{ github.run_number }}/native-feed.json') -WindowStyle Hidden -PassThru
+          if(!$p.WaitForExit(300000) -or $p.ExitCode -ne 0){throw '远端候选签名下载与健康安装门失败'}
+      - name: 验收后推进稳定入口
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_SHA: ${{ needs.sync.outputs.candidate }}
+          BASE_SHA: ${{ needs.sync.outputs.base }}
+          PRODUCT_VERSION: 0.3.${{ github.run_number }}
+          PRODUCT_BRANCH: main
+        run: python scripts/native/publish.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-upgrade-evidence
+          path: native-artifacts/upgrade/upgrade-gates.json
+  cleanup:
+    needs: [sync,build,publish]
+    if: always() && needs.sync.outputs.branch != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 清理本运行候选引用
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method DELETE 'repos/${{ github.repository }}/git/refs/heads/${{ needs.sync.outputs.branch }}'

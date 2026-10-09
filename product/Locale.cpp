@@ -14,6 +14,7 @@
 #include <QFont>
 namespace compositor::product {
 QString displayText(const QString& source) {
+    if(source.contains('\t'))return displayText(source.section('\t',0,0))+"\t"+source.section('\t',1);
     static const auto dictionary=[] {
         QFile file(":/product/zh-CN.json");file.open(QIODevice::ReadOnly);
         return QJsonDocument::fromJson(file.readAll()).object();
@@ -46,7 +47,7 @@ public:
 };
 class ChineseDelegate final:public QStyledItemDelegate {
 public:using QStyledItemDelegate::QStyledItemDelegate;
-    void initStyleOption(QStyleOptionViewItem* option,const QModelIndex& index)const override {QStyledItemDelegate::initStyleOption(option,index);option->text=displayText(option->text);}
+    void initStyleOption(QStyleOptionViewItem* option,const QModelIndex& index)const override {QStyledItemDelegate::initStyleOption(option,index);option->text=compositor::product::displayText(option->text);}
 };
 class DisplayEvents final:public QObject {
 public:using QObject::QObject;

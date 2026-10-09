@@ -18,6 +18,7 @@ int main(int argc,char** argv){
             if(feed.isEmpty()){if(!temporary.isValid())throw std::runtime_error("无法创建更新目录。");const auto url=value("--url");feed=compositor::product::prepareBundle(url.isEmpty()?compositor::product::fetchEnvelope():compositor::product::fetchEnvelope(url),temporary.path());}
             auto options=compositor::product::productionOptions();
             if(args.contains("--gate-fail-activation"))options.fault=compositor::production::Options::Fault::AfterPendingActivation;
+            if(args.contains("--gate-fail-finalize"))options.fault=compositor::production::Options::Fault::BeforeFinalize;
             auto result=updater.install(feed,options);
             if(args.contains("--quiet"))return 0;
         }

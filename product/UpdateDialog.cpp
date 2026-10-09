@@ -16,7 +16,7 @@
 #include <QCloseEvent>
 namespace compositor::product {
 namespace {
-struct Result {QString error;QByteArray envelope;bool available{};QString version;};
+struct Result {QString error;QByteArray envelope;bool available{},restartRequired{};QString version;};
 QString installationRoot(){QDir d(QApplication::applicationDirPath());if(!d.cdUp()||!d.cdUp()||!QFile::exists(d.filePath("install.json")))throw std::runtime_error("请运行安装版以启用自动更新。");return d.absolutePath();}
 class Panel final:public QDialog {
     QLabel* status_;QPushButton* action_;QByteArray envelope_;QString root_;bool busy_{},ready_{};bool automatic_{};
@@ -33,10 +33,11 @@ public:
         busy_=true;action_->setEnabled(false);auto* watcher=new QFutureWatcher<Result>(this);
         connect(watcher,&QFutureWatcher<Result>::finished,this,[this,watcher]{auto r=watcher->result();watcher->deleteLater();busy_=false;
             if(!r.error.isEmpty()){status_->setText("更新检查失败。"+r.error);action_->setText("重试");action_->setEnabled(true);if(automatic_)deleteLater();return;}
-            envelope_=r.envelope;if(r.available){status_->setText("发现新版本 "+r.version+"，可下载并验证后安装。编辑项目将在重启前提示保存。");action_->setText("下载并安装");action_->setEnabled(true);show();}
+            envelope_=r.envelope;if(r.restartRequired){ready_=true;status_->setText("已安装新版本 "+r.version+"，保存当前项目后即可重启。");action_->setText("保存并重启");action_->setEnabled(true);show();}
+            else if(r.available){status_->setText("发现新版本 "+r.version+"，可下载并验证后安装。编辑项目将在重启前提示保存。");action_->setText("下载并安装");action_->setEnabled(true);show();}
             else {status_->setText("已是最新版本 "+QApplication::applicationVersion());action_->setText("检查完成");if(automatic_)deleteLater();}
         });
-        watcher->setFuture(QtConcurrent::run([]{Result r;try{auto root=installationRoot();production::Updater updater(std::filesystem::path(root.toStdWString()));auto state=updater.state();r.envelope=fetchEnvelope();auto manifest=production::verifyManifest(r.envelope,productionOptions());r.version=manifest.version.text();if(manifest.version<state.current)throw std::runtime_error("更新服务返回了旧版本，已拒绝降级。");r.available=manifest.version>state.current;}catch(const std::exception&e){r.error=QString::fromUtf8(e.what());}return r;}));
+        watcher->setFuture(QtConcurrent::run([]{Result r;try{auto root=installationRoot();production::Updater updater(std::filesystem::path(root.toStdWString()));auto state=updater.state();r.envelope=fetchEnvelope();auto manifest=production::verifyManifest(r.envelope,productionOptions());r.version=manifest.version.text();if(manifest.version<state.current)throw std::runtime_error("更新服务返回了旧版本，已拒绝降级。");r.available=manifest.version>state.current;r.restartRequired=state.current>production::Version::parse(QApplication::applicationVersion());}catch(const std::exception&e){r.error=QString::fromUtf8(e.what());}return r;}));
     }
     void install(){
         automatic_=false;busy_=true;action_->setEnabled(false);status_->setText("正在下载、核对签名并检查新版本，请稍候…");

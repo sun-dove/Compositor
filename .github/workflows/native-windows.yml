@@ -13,6 +13,10 @@ on:
         description: '验收通过后发布候选资产，暂不推进稳定索引'
         type: boolean
         default: false
+      trilogy:
+        description: '构建并发布 0.2.0、0.2.1、0.2.2 三个真实升级候选'
+        type: boolean
+        default: false
   workflow_call:
     inputs:
       version:
@@ -40,6 +44,12 @@ jobs:
         with:
           path: windows-native/dependencies
           key: native-deps-v1-${{ hashFiles('windows-native/dependencies.lock.json', 'windows-native/dependencies/imaging/lock.json') }}
+      - uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830
+        id: compiler
+        with:
+          path: windows-native/build/product
+          key: native-build-v1-${{ hashFiles('windows-native/src/**', 'windows-native/CMakeLists.txt') }}-${{ hashFiles('product/**') }}
+          restore-keys: native-build-v1-${{ hashFiles('windows-native/src/**', 'windows-native/CMakeLists.txt') }}-
       - name: 构建完整参考界面与中文体验门
         shell: pwsh
         run: ./scripts/native/build.ps1 -Version '${{ inputs.version || '0.2.0' }}'
@@ -48,17 +58,46 @@ jobs:
         with:
           path: windows-native/dependencies
           key: ${{ steps.deps.outputs.cache-primary-key }}
+      - uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830
+        if: always() && steps.compiler.outputs.cache-hit != 'true'
+        with:
+          path: windows-native/build/product
+          key: ${{ steps.compiler.outputs.cache-primary-key }}
       - name: 生产签名、实际安装校验并生成安装包
         shell: pwsh
         env:
           WINDOWS_UPDATE_PRIVATE_KEY: ${{ secrets.WINDOWS_UPDATE_PRIVATE_KEY }}
         run: ./scripts/native/package.ps1 -Version '${{ inputs.version || '0.2.0' }}'
       - name: 发布完整预览资产
-        if: inputs.publish_preview == true
+        if: inputs.publish_preview == true || inputs.trilogy == true
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create 'windows-v${{ inputs.version }}' native-artifacts/release/* --prerelease --title 'Compositor Windows 中文版 ${{ inputs.version }}' --notes-file native-artifacts/release/发布说明.md
+      - name: 编译后续两个独立版本
+        if: inputs.trilogy == true
+        shell: pwsh
+        run: |
+          ./scripts/native/build-next.ps1 -Version 0.2.1 -Output native-artifacts-1
+          ./scripts/native/build-next.ps1 -Version 0.2.2 -Output native-artifacts-2
+      - name: 签名与发布第二版本
+        if: inputs.trilogy == true
+        shell: pwsh
+        env:
+          WINDOWS_UPDATE_PRIVATE_KEY: ${{ secrets.WINDOWS_UPDATE_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/native/package.ps1 -Version 0.2.1 -Directory native-artifacts-1
+          gh release create windows-v0.2.1 native-artifacts-1/release/* --prerelease --title 'Compositor Windows 中文版 0.2.1' --notes-file native-artifacts-1/release/发布说明.md
+      - name: 签名与发布第三版本
+        if: inputs.trilogy == true
+        shell: pwsh
+        env:
+          WINDOWS_UPDATE_PRIVATE_KEY: ${{ secrets.WINDOWS_UPDATE_PRIVATE_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/native/package.ps1 -Version 0.2.2 -Directory native-artifacts-2
+          gh release create windows-v0.2.2 native-artifacts-2/release/* --prerelease --title 'Compositor Windows 中文版 0.2.2' --notes-file native-artifacts-2/release/发布说明.md
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -67,5 +106,7 @@ jobs:
             native-artifacts/release
             native-artifacts/evidence
             native-artifacts/bootstrap
+            native-artifacts-1/release
+            native-artifacts-2/release
           if-no-files-found: error
           compression-level: 0

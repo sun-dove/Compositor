@@ -14,4 +14,6 @@ for name in ("Updater.h", "Updater.cpp"):
         old = 'keys(object,{"schema","product","channel","version","files"})'
         assert text.count(old) == 1, "上游更新协议变化，需要人工适配"
         text = text.replace(old, 'keys(object,{"schema","product","channel","version","files","bundle"})')
-    (out/name).write_text(text, encoding="utf-8")
+    target=out/name
+    if not target.exists() or target.read_text(encoding="utf-8") != text:
+        target.write_text(text, encoding="utf-8")
