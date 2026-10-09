@@ -50,7 +50,7 @@ Run $cmake -S $native -B (Join-Path $native 'build/product') -G 'Visual Studio 1
 $build=Join-Path $native 'build/product';$release=Join-Path $build 'Release'
 Run $cmake --build $build --config Release --target CompositorProduct CompositorStart core_tests persistence_tests command_ui_tests window_chrome_tests --parallel 4
 Push-Location $build
-try {Run ctest -C Release --no-tests=error --output-on-failure -R '^(core\.|persistence\.(?!process_termination)|command_ui\.)'}finally{Pop-Location}
+try {Run ctest -C Release --no-tests=error --output-on-failure -R '^(core\.|persistence\.|command_ui\.)' -E '^persistence\.process_termination$'}finally{Pop-Location}
 # The original chrome witness is an executable workflow, not a registered CTest.
 Run (Join-Path $release 'window_chrome_tests.exe') (Join-Path $outputPath 'chrome-evidence')
 $payload=Join-Path $outputPath 'payload';New-Item -ItemType Directory -Force $payload | Out-Null
