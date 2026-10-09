@@ -1,0 +1,7 @@
+{
+    "provider": "github",
+    "owner": "sun-dove",
+    "repo": "Compositor",
+    "publishAutoUpdate": true,
+    "autoDownload": true
+  }
