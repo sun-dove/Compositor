@@ -38,8 +38,8 @@ public:
         if(auto* o=qstyleoption_cast<const QStyleOptionMenuItem*>(option)){auto copy=*o;copy.text=displayText(copy.text);QProxyStyle::drawControl(element,&copy,painter,widget);return;}
         if(auto* o=qstyleoption_cast<const QStyleOptionButton*>(option)){auto copy=*o;copy.text=displayText(copy.text);QProxyStyle::drawControl(element,&copy,painter,widget);return;}
         if(auto* o=qstyleoption_cast<const QStyleOptionComboBox*>(option)){auto copy=*o;copy.currentText=displayText(copy.currentText);QProxyStyle::drawControl(element,&copy,painter,widget);return;}
-        if(auto* o=qstyleoption_cast<const QStyleOptionTab*>(option)){auto copy=*o;copy.text=displayText(copy.text);QProxyStyle::drawControl(element,&copy,painter,widget);return;}
-        if(auto* o=qstyleoption_cast<const QStyleOptionViewItem*>(option)){auto copy=*o;copy.text=displayText(copy.text);QProxyStyle::drawControl(element,&copy,painter,widget);return;}
+        // Project titles, layer names and file picker entries are user content.
+        // Combo enum rows are translated by the dedicated delegate below.
         if(auto* o=qstyleoption_cast<const QStyleOptionToolButton*>(option)){auto copy=*o;copy.text=displayText(copy.text);QProxyStyle::drawControl(element,&copy,painter,widget);return;}
         if(auto* o=qstyleoption_cast<const QStyleOptionDockWidget*>(option)){auto copy=*o;copy.title=displayText(copy.title);QProxyStyle::drawControl(element,&copy,painter,widget);return;}
         QProxyStyle::drawControl(element,option,painter,widget);
