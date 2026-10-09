@@ -1,0 +1,30 @@
+name: 原界面 Windows 中文构建
+on:
+  push:
+    branches: [windows-native-zh]
+    paths: ['windows-native/**', 'product/**', 'scripts/native/**', 'docs/windows/**', '.github/workflows/native-windows.yml']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '候选版本'
+        default: '0.2.0'
+        required: true
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: 构建完整参考界面与中文体验门
+        shell: pwsh
+        run: ./scripts/native/build.ps1 -Version '${{ inputs.version || '0.2.0' }}'
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: native-windows
+          path: native-artifacts
+          if-no-files-found: error

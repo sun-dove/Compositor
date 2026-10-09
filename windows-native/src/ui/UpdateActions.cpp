@@ -6,6 +6,7 @@
 
 namespace compositor {
 void MainWindow::checkForUpdates(){
+    if(auto* handler=qobject_cast<QAction*>(qApp->property("productionUpdateAction").value<QObject*>())){handler->trigger();return;}
     ui::UpdatePanelHost host;
     host.restart=[this](const std::filesystem::path& root){
         // Keep the old process usable if a save prompt or launch fails.

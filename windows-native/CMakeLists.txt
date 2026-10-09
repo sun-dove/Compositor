@@ -980,3 +980,8 @@ endforeach()
 if(BUILD_TESTING)
   include(tests/PortExpansionTests.cmake)
 endif()
+
+option(COMPOSITOR_PRODUCT "Build the optional sun-dove product" OFF)
+if(COMPOSITOR_PRODUCT)
+  include("${CMAKE_SOURCE_DIR}/../product/Product.cmake")
+endif()
