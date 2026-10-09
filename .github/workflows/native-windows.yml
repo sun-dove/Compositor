@@ -106,7 +106,17 @@ jobs:
             native-artifacts/release
             native-artifacts/evidence
             native-artifacts/bootstrap
-            native-artifacts-1/release
-            native-artifacts-2/release
           if-no-files-found: error
+          compression-level: 0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: inputs.trilogy == true && always()
+        with:
+          name: native-version-1
+          path: native-artifacts-1/release
+          compression-level: 0
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: inputs.trilogy == true && always()
+        with:
+          name: native-version-2
+          path: native-artifacts-2/release
           compression-level: 0

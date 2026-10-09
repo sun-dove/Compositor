@@ -46,11 +46,11 @@ foreach($path in @(& git -C $root ls-files product)){
  $time=[DateTimeOffset]::FromUnixTimeSeconds([long](& git -C $root log -1 --format=%ct -- $path)).UtcDateTime
  (Get-Item -LiteralPath (Join-Path $root $path)).LastWriteTimeUtc=$time
 }
-Run $cmake -S $native -B (Join-Path $native 'build/product') -G 'Visual Studio 17 2022' -A x64 "-DCMAKE_PREFIX_PATH=$qt" -DCOMPOSITOR_PRODUCT=ON "-DPRODUCT_VERSION=$Version"
+Run $cmake -S $native -B (Join-Path $native 'build/product') -G 'Visual Studio 17 2022' -A x64 "-DCMAKE_PREFIX_PATH=$qt" -DBUILD_TESTING=ON -DCOMPOSITOR_PRODUCT=ON "-DPRODUCT_VERSION=$Version"
 $build=Join-Path $native 'build/product';$release=Join-Path $build 'Release'
 Run $cmake --build $build --config Release --target CompositorProduct CompositorStart core_tests persistence_tests command_ui_tests window_chrome_tests --parallel 4
 Push-Location $build
-try {Run ctest -C Release --output-on-failure -R '^(core\.|persistence\.(?!process_termination)|command_ui\.)'}finally{Pop-Location}
+try {Run ctest -C Release --no-tests=error --output-on-failure -R '^(core\.|persistence\.(?!process_termination)|command_ui\.)'}finally{Pop-Location}
 # The original chrome witness is an executable workflow, not a registered CTest.
 Run (Join-Path $release 'window_chrome_tests.exe') (Join-Path $outputPath 'chrome-evidence')
 $payload=Join-Path $outputPath 'payload';New-Item -ItemType Directory -Force $payload | Out-Null
@@ -73,7 +73,7 @@ $policy=[ordered]@{schema=1;channel='stable';automaticUpdates=$true;version=$Ver
 $policy | ConvertTo-Json | Set-Content (Join-Path $payload 'release-policy.json') -Encoding utf8
 [IO.File]::WriteAllText((Join-Path $payload 'README.txt'),"Compositor Windows 中文版 $Version`n请通过安装目录根部 CompositorStart.exe 启动；应用启动会检查本仓库签名更新。`n原作者 Robbie Tilton；Windows 移植 IAmTheBlurr；中文与自动更新 sun-dove。`n保留原完整界面、图标与 Inter 字体。中文缺失字形由 Windows 系统字体补齐。`n请将 .comp 项目保存在应用目录之外。完整最新 Mac 功能尚未迁移。`n许可证与可重建源代码位于 licenses / sources。安装包没有 Authenticode 签名。`n")
 $evidence=Join-Path $outputPath 'evidence';New-Item -ItemType Directory -Force $evidence | Out-Null
-$proc=Start-Process (Join-Path $payload 'Compositor.exe') -ArgumentList @('--product-gates','--evidence',('"'+$evidence+'"')) -WindowStyle Hidden -PassThru
+$proc=Start-Process (Join-Path $payload 'Compositor.exe') -ArgumentList @('--product-gates','--warp','--evidence',('"'+$evidence+'"')) -PassThru
 if(!$proc.WaitForExit(180000)){Stop-Process -Id $proc.Id;throw '实际原界面中文体验门超时'}
 if($proc.ExitCode -ne 0 -or !(Test-Path (Join-Path $evidence 'product-gates.json'))){throw '实际原界面中文体验门失败'}
 Write-Output "原界面中文构建与验收通过：$outputPath"
