@@ -1,0 +1,40 @@
+
+  {
+    "name": "compositor",
+    "version": "1.0.0",
+    "description": "Photoshop alternative for Mac (Windows build)",
+    "main": "main.js",
+    "scripts": {
+      "start": "electron .",
+      "dev": "electron .",
+      "build": "webpack --progress",
+      "build:win": "electron-builder --win --config",
+      "build:mac": "electron-builder --mac --config"
+    },
+    "build": {
+      "appId": "com.sun-dove.compositor",
+      "productName": "Compositor",
+      "win": {
+        "target": "nsis",
+        "icon": "icon.ico",
+        "publisherName": "sun-dove"
+      },
+      "nsis": {
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true,
+        "installerIcon": "icon.ico",
+        "installerSidebar": "installerSidebar.bmp",
+        "uninstallerIcon": "icon.ico",
+        "uninstallerSidebar": "uninstallerSidebar.bmp"
+      }
+    },
+    "devDependencies": {
+      "electron": "^30.0.0",
+      "electron-builder": "^24.9.0",
+      "webpack": "^5.0.0",
+      "webpack-cli": "^4.0.0"
+    },
+    "dependencies": {
+      "electron-updater": "^6.0.0"
+    }
+  }
