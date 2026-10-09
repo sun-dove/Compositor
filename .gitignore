@@ -21,4 +21,5 @@ xcuserdata/
 
 # Claude Code settings personal to this machine
 .claude/settings.local.json
+native-artifacts/
 BUILD_PLAN.md

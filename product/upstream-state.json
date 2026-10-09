@@ -1,0 +1,11 @@
+{
+ "schema":1,
+ "macUpstreamCommit":"22c7b8d5b23bb1e27a5746912061b23757c4f554",
+ "windowsUpstreamCommit":"dfd0044d39b63ea49112a0e316a9460af29acdea",
+ "windowsMacBaseline":"a19db9011282399785dc18efcfded904627bdcc2",
+ "resources":{
+  "assets/fonts/InterVariable.ttf":"4989b125924991b90d05b2d16e0e388c48f7d5bb8b30539bbf9c755278d0ccaf",
+  "src/ui/EditorIcons.cpp":"9bcd512ea2cb211748942685c286552cfc24885ce520650c501c794a412e4bb8",
+  "src/ui/VisualStyle.cpp":"30d1c4b8b1d25058f6d73ba00e29e124d95141bdcec891f572e5b0c0feb7372e"
+ }
+}
